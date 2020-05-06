@@ -4,24 +4,32 @@
 const
     fs = require('fs'),
     url = require('url'),
-    date = new Date().toLocaleString().replace(/\//g, '-').replace(/:/g, '_'),
-    conf = require('./conf.json'),
     http = require('http'),
     path = require('path'),
-    https = require('https'),
     logDir = path.join(__dirname, 'logs'),
-    logFile = path.join(logDir, 'log-' + date),//.replace(/:/g,'-').replace('.','_'),
     publicDir = path.join(__dirname, 'public'),
-    varArr = fs.readFileSync(path.join(__dirname, '.env')).toString().split('/n'),
     errorPage = fs.readFileSync(path.join(publicDir, 'error.html'), 'utf8'),
-    port = 3000,
+    logFile = path.join(logDir, 'log-' + getDate()),
+    port = 3000;
 
 // Fucntion expression declaration
 
 !fs.existsSync(logDir) && fs.mkdirSync(logDir);
-fs.writeFileSync(logFile, 'LOG STARTED ' + new Date() + '\n\n', 'utf8')
-for (let v = 0; v < varArr.length; v++) { process.env[varArr[v].split('=')[0]] = varArr[v].split('=')[1] }
-// }
+
+fs.writeFileSync(path.join(logFile), 'LOG STARTED ' + getDate() + '\n\n', 'utf8');
+
+fs.readFile(path.join(__dirname, '.env'), function (err, fileBuffer) {
+    const envFile = fileBuffer.toString().split('\n');
+    if (err) {
+        throw new Error(err)
+    }
+    for (let i = 0; i < envFile.length; i++) {
+        console.log('envFile[i]: ', envFile[i]);
+        process.env[envFile[i].split('=')[0]] = envFile[i].split('=')[1];
+    }
+})
+
+function getDate() { return new Date().toLocaleString().replace(/\//g, '-').replace(/:/g, '_') };
 
 function requestLogger({ protocol, host, path, query }) {
     return fs.appendFileSync(
@@ -51,12 +59,12 @@ http.createServer((request, response) => {
         path.join(publicDir, request.url === '/' ? 'index.html' : request.url),
         function (err, fileBuffer) {
 
-            if(err){
+            if (err) {
                 errorLogger(err);
                 response.statusCode = 500;
                 errorPage
-                    .replace('{{ERROR-CODE}}','500')
-                    .replace('{{ERROR-MESSAGE}}',err)
+                    .replace('{{ERROR-CODE}}', '500')
+                    .replace('{{ERROR-MESSAGE}}', err)
                 response.end(errorPage);
             }
 

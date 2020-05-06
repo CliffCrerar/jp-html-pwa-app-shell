@@ -1,0 +1,18 @@
+@import url('./built-in.css');
+
+
+
+html{
+    font-family: EXO;
+}
+
+body{
+
+}
+
+html, body{
+    min-width: 100vw;
+    min-height: 100vh;
+    height: auto;
+    overflow-x: hidden;
+}
