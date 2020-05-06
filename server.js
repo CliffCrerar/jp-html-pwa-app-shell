@@ -13,12 +13,12 @@ const
     logFile = path.join(logDir, 'log-' + date),//.replace(/:/g,'-').replace('.','_'),
     publicDir = path.join(__dirname, 'public'),
     varArr = fs.readFileSync(path.join(__dirname, '.env')).toString().split('/n'),
-    indexFile = fs.readFileSync(path.join(publicDir, 'index.html'),'utf8'),
-    errorPage = fs.readFileSync(path.join(publicDir, 'error.html'),'utf8'),
+    indexFile = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8'),
+    errorPage = fs.readFileSync(path.join(publicDir, 'error.html'), 'utf8'),
     msg = {
         InitNotComplete: 'Incomplete Initialization, Cannot Start Server'
     };
-    mimeTypesObj = {};
+mimeTypesObj = {};
 
 // Fucntion expression declaration
 
@@ -64,20 +64,25 @@ function getMime(callback) {
 
 function getFile(options) {
     const filePath = path.join(publicDir, options.path);
-    
+
     switch (options.path) {
         case '/': return {
-            file: indexFile,
+            file: fs.readFileSync(path.join(filePath,'index.html')),
             mime: extractMime(filePath)
         };
+        case '/favicon.ico': return {
+            file: fs.readFileSync(filePath),
+            mime: 'image/icon'
+        }
         default: return {
-            file:fs.readFileSync(filePath,'utf8'),
+            file: fs.readFileSync(filePath),
             mime: extractMime(filePath)
         };
     }
 
-    function extractMime(fp){
-        return Object.entries(JSON.parse(mimeTypesObj)).filter(sharr => sharr[0] === path.parse(fp).ext)[0][1]
+    function extractMime(fp) {
+        //return Object.entries(JSON.parse(mimeTypesObj)).filter(sharr => sharr[0] === path.parse(fp).ext)[0][1]
+        return mimeTypesObj[path.parse(fp).ext];
     }
 }
 
@@ -99,9 +104,9 @@ function Initialize() {
 // Main execution block
 
 Initialize().then((mimes) => http.createServer(function (request, response) {
-    // console.log('mimes: ', mimes);
+    console.log('mimes: ', mimes);
 
-    let fileSpace = '';
+    let fileStream = '';
 
     mimeTypesObj = mimes;
 
@@ -112,18 +117,20 @@ Initialize().then((mimes) => http.createServer(function (request, response) {
         const urlObject = url.parse(requestUrl);
 
         const pathDetails = path.parse(requestUrl);
-        
-        const {file,mime} = getFile(urlObject);
+
+        console.log(mime[pathDetails.ext])
+
+        const { file, mime } = getFile(urlObject);
         console.log('mime: ', mime);
         console.log('file: ', file);
 
-        fileSpace = file;
-        
+        // fileStream = fs.createWriteStream(file).pipe(response);
+
         console.log('pathDetails: ', pathDetails);
 
         requestLogger(urlObject);
 
-        
+
 
         response.writeHead(200, "OK", mime);
 
@@ -135,15 +142,18 @@ Initialize().then((mimes) => http.createServer(function (request, response) {
 
         switch (err.code) {
 
-            case 'ENOENT': response.writeHead(404, new Error(err).message, 'text/html'); break;
+            case 'ENOENT': response.writeHead(404, new Error(err).message, {    'Content-Type': 'text/html'); break;
 
             default: response.writeHead(500, new Error(err).message, 'text/html');
 
         }
 
     }
+    // fileStream.pipe(response)
+    // response.end('wala');
+    response.pipe(fileStream);
+    fileStream.p
 
-    response.end(fileSpace);
 
 })
     .listen(8080)
