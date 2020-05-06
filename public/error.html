@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Request Errors</title>
+</head>
+<body>
+    <h1 style="text-align: center;">Server Errors</h1>
+    <h2>There were erros that occured with communication with the server.</h2>
+    <hr>
+    <ul>
+        {{ERROR-OPEN}}
+        {{ERROR-CLOSED}}
+    </ul>
+    <script>
+        const ul = document.getElementsByTagName('ul')[0]
+        const modString = document.getElementsByTagName('ul')[0].innerHTML.replace('{{ERROR-OPEN}}').replace('{{ERROR-CLOSED}}');
+        ul.innerHTML = modString
+    </script>
+</body>
+</html>
