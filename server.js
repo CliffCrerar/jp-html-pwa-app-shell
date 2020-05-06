@@ -13,23 +13,15 @@ const
     logFile = path.join(logDir, 'log-' + date),//.replace(/:/g,'-').replace('.','_'),
     publicDir = path.join(__dirname, 'public'),
     varArr = fs.readFileSync(path.join(__dirname, '.env')).toString().split('/n'),
-    indexFile = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8'),
     errorPage = fs.readFileSync(path.join(publicDir, 'error.html'), 'utf8'),
-    msg = {
-        InitNotComplete: 'Incomplete Initialization, Cannot Start Server'
-    };
-mimeTypesObj = {};
+    port = 3000,
 
 // Fucntion expression declaration
 
-function createLog() {
-    !fs.existsSync(logDir) && fs.mkdirSync(logDir);
-    fs.writeFileSync(logFile, 'LOG STARTED ' + new Date() + '\n\n', 'utf8')
-};
-
-// function statement declarations
-
-function environmentVariables() { for (let v = 0; v < varArr.length; v++) process.env[varArr[v].split('=')[0]] = varArr[v].split('=')[1]; return; }
+!fs.existsSync(logDir) && fs.mkdirSync(logDir);
+fs.writeFileSync(logFile, 'LOG STARTED ' + new Date() + '\n\n', 'utf8')
+for (let v = 0; v < varArr.length; v++) { process.env[varArr[v].split('=')[0]] = varArr[v].split('=')[1] }
+// }
 
 function requestLogger({ protocol, host, path, query }) {
     return fs.appendFileSync(
@@ -51,119 +43,29 @@ function deleteLogFiles() {
     }
 }
 
+http.createServer((request, response) => {
 
-function getMime(callback) {
-    const req = https.request(conf.mimes, res => {
-        let payload = '';
-        res.on('data', data => payload += data);
-        res.on('end', () => callback(payload))
-    })
-    req.on('error', err => callback(err))
-    req.end()
-}
+    requestLogger(url.parse(`http://${request.headers.host}${request.url}`));
 
-function getFile(options) {
-    const filePath = path.join(publicDir, options.path);
+    fs.readFile(
+        path.join(publicDir, request.url === '/' ? 'index.html' : request.url),
+        function (err, fileBuffer) {
 
-    switch (options.path) {
-        case '/': return {
-            file: fs.readFileSync(path.join(filePath,'index.html')),
-            mime: extractMime(filePath)
-        };
-        case '/favicon.ico': return {
-            file: fs.readFileSync(filePath),
-            mime: 'image/icon'
-        }
-        default: return {
-            file: fs.readFileSync(filePath),
-            mime: extractMime(filePath)
-        };
-    }
+            if(err){
+                errorLogger(err);
+                response.statusCode = 500;
+                errorPage
+                    .replace('{{ERROR-CODE}}','500')
+                    .replace('{{ERROR-MESSAGE}}',err)
+                response.end(errorPage);
+            }
 
-    function extractMime(fp) {
-        //return Object.entries(JSON.parse(mimeTypesObj)).filter(sharr => sharr[0] === path.parse(fp).ext)[0][1]
-        return mimeTypesObj[path.parse(fp).ext];
-    }
-}
+            // response.setHeader("Content-Type","text/html");
+            response.statusCode = 200;
+            response.write(fileBuffer);
+            response.end();
+        })
 
-function Initialize() {
-    return new Promise((resolve, reject) => {
-        try {
-            environmentVariables();
-            // deleteLogFiles();
-            createLog();
-            getMime(mimes => {
-                return resolve(mimes.toString());
-            })
-        } catch (err) {
-            return reject(err);
-        }
-    })
-}
-
-// Main execution block
-
-Initialize().then((mimes) => http.createServer(function (request, response) {
-    console.log('mimes: ', mimes);
-
-    let fileStream = '';
-
-    mimeTypesObj = mimes;
-
-    const requestUrl = 'http://' + request.headers.host + request.url;
-
-    try {
-
-        const urlObject = url.parse(requestUrl);
-
-        const pathDetails = path.parse(requestUrl);
-
-        console.log(mime[pathDetails.ext])
-
-        const { file, mime } = getFile(urlObject);
-        console.log('mime: ', mime);
-        console.log('file: ', file);
-
-        // fileStream = fs.createWriteStream(file).pipe(response);
-
-        console.log('pathDetails: ', pathDetails);
-
-        requestLogger(urlObject);
-
-
-
-        response.writeHead(200, "OK", mime);
-
-    } catch (err) {
-
-        errorLogger(err);
-
-        fileSpace = errorPage;
-
-        switch (err.code) {
-
-            case 'ENOENT': response.writeHead(404, new Error(err).message, {    'Content-Type': 'text/html'); break;
-
-            default: response.writeHead(500, new Error(err).message, 'text/html');
-
-        }
-
-    }
-    // fileStream.pipe(response)
-    // response.end('wala');
-    response.pipe(fileStream);
-    fileStream.p
-
-
-})
-    .listen(8080)
-)
-    .catch(err => { throw new Error(msg.InitNotComplete) })
-
-    .catch(err => { throw new Error(msg.InitNotComplete) })
-
-
-
-
+}).listen(port);
 
 
