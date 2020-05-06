@@ -1,0 +1,7 @@
+const mimes = require('./mimes.json')
+
+
+
+
+const newObj = Object.entries(mimes).filter(sharr=>sharr[0]===require('path').parse('index.html').ext)[0][1]
+console.log(newObj)
