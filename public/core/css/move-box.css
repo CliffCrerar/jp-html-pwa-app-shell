@@ -1,0 +1,16 @@
+.box {
+    will-change: transform, opacity;
+}
+
+.box {
+    transform: translate(0, 0);
+    transition: transform 500ms;
+}
+
+.box.move {
+    transform: translate(100px, 100px);
+}
+
+.box.move {
+    transform: translate(100px, 100px);
+}
